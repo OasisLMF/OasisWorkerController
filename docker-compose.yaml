@@ -1,0 +1,6 @@
+version: '3.4'
+services:
+  controller:
+    image: coreoasis/worker-controller
+    build: .
+  

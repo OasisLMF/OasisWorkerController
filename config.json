@@ -1,0 +1,22 @@
+{
+  "OasisLMF-PiWind-1": {
+    "image": "coreoasis/model_worker:latest",
+    "env": {
+      "OASIS_MODEL_SUPPLIER_ID": "OasisLMF",
+      "OASIS_MODEL_ID": "PiWind",
+      "OASIS_MODEL_VERSION_ID": "1",
+      "OASIS_MODEL_NUM_ANALYSIS_CHUNKS": "8",
+      "OASIS_CELERY_BROKER_URL": "amqp://rabbit:rabbit@localhost:5672",
+      "OASIS_CELERY_DB_ENGINE": "db+mysql+pymysql",
+      "OASIS_CELERY_DB_HOST": "localhost",
+      "OASIS_CELERY_DB_PASS": "password",
+      "OASIS_CELERY_DB_USER": "celery",
+      "OASIS_CELERY_DB_NAME": "celery",
+      "OASIS_CELERY_DB_PORT": "33306"
+    },
+    "volumes": [
+      "/home/dan/workspace/wildfish/oasis/OasisPiWind:/var/oasis/:rw",
+      "/home/dan/workspace/wildfish/oasis/OasisPlatform/docker-shared-fs:/shared-fs:rw"
+    ]
+  }
+}
