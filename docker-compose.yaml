@@ -1,6 +1,13 @@
-version: '3.4'
+version: '3.7'
 services:
   controller:
     image: coreoasis/worker-controller
     build: .
-  
+    network_mode: host
+    environment:
+      API_HOST: "${OASIS_API_HOST:-localhost:8000}"
+      BROKER_URI: "${OASIS_BROKER_URL:-amqp://rabbit:rabbit@localhost:5672}"
+      USERNAME: "${OASIS_API_USER:-root}"
+      PASSWORD: "${OASIS_API_PASSWORD:-root}"
+    volumes:
+    - "${DOCKER_SOCKET_LOCATION:-/var/run/docker.sock}:/var/run/docker.sock"

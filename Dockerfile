@@ -1,7 +1,8 @@
 FROM python:3.8
 
-ENV NETWORK bridge
+ENV NETWORK host
 ENV QUEUE_CONFIG_PATH ./config.json
+ENV PYTHONUNBUFFERED 1
 
 RUN apt update && apt install apt-transport-https \
                               ca-certificates \
@@ -24,9 +25,12 @@ COPY requirements-controller.txt .
 RUN pip install -r requirements-controller.txt
 
 RUN useradd controller
+RUN usermod -a -G docker controller
+
 USER controller
 WORKDIR /home/controller
 
+COPY --chown=controller ./config.json /home/controller
 COPY --chown=controller src/ ./src/
 
 ENTRYPOINT [ "./src/controller.py" ]
