@@ -22,6 +22,7 @@ import aiohttp
 from os import getenv
 import websockets
 from aiohttp import ClientError
+import os
 
 
 class SocketQueueEntry(TypedDict):
@@ -59,7 +60,7 @@ class ContainerConfig(TypedDict):
     """
     image: str
     env: Dict[str, str]
-    volumes: List[str]
+    volumes: Dict[str, str]
 
 
 # config holding a mapping of queues to container configuration
@@ -71,7 +72,7 @@ def parse_args():
     parser.add_argument('--api-host', help='The root uri of the api to connect to.', default=getenv('API_HOST'))
     parser.add_argument('--username', help='The username of the worker controller user.', default=getenv('USERNAME'))
     parser.add_argument('--password', help='The password of the worker controller user.', default=getenv('PASSWORD'))
-    parser.add_argument('--config', help='File path to the config mapping queue name to docker image name.', default=getenv('QUEUE_CONFIG_PATH', './config.json'))
+    parser.add_argument('--config', help='File path to the config mapping queue name to docker image name.', type=os.path.abspath, default=getenv('QUEUE_CONFIG_PATH', './config.json'))
     parser.add_argument('--network', help='The name of the docker network to run the workers on.', default=getenv('NETWORK', 'host'))
     parser.add_argument('--broker', help='The uri of the broker managing celery tasks.', default=getenv('BROKER_URI'))
     parser.add_argument('--secure', help='Flag if https and wss should be used.', default=False, action='store_true')
@@ -152,7 +153,7 @@ async def start_docker_container(queue: SocketQueueEntry, network: str, broker_u
     container_name = f'{image_spec["image"].replace(":", "_").replace("/", "_")}_{uuid4().hex}'
 
     env_str = ' '.join(f'-e {k}="{v}"' for k, v in {**image_spec.get('env', {}), 'OASIS_WORKER_BROKER_URL': broker_url}.items())
-    vol_str = ' '.join(f'-v "{v}"' for v in image_spec.get('volumes', []))
+    vol_str = ' '.join(f'-v "{k}:{v}"' for k, v in image_spec.get('volumes', {}).items())
 
     print(f'Starting container: {image_spec["image"]}')
     await asyncio.create_subprocess_shell(
@@ -229,12 +230,27 @@ async def handle_messages(args, config: ControllerConfig):
         await asyncio.sleep(60)
 
 
-def main():
-    args = parse_args()
+def load_config(config_path: str) -> Dict[str, ContainerConfig]:
+    """
+    Loads the config interpolaring and environment varabled in the env
+    and volumes sections
 
-    with open(args.config) as f:
+    :param config_path: The path to the config file
+    :return: THe interpolated config
+    """
+    with open(config_path) as f:
         config: Dict[str, ContainerConfig] = json.load(f)
 
+        for queue_config in config.values():
+            queue_config['env'] = {k: os.path.expandvars(v) for k, v in queue_config.get('env', {}).items()}
+            queue_config['volumes'] = {os.path.expandvars(k): os.path.expandvars(v) for k, v in queue_config.get('volumes', {}).items()}
+
+    return config
+
+
+def main():
+    args = parse_args()
+    config = load_config(args.config)
     asyncio.get_event_loop().run_until_complete(handle_messages(args, config))
 
 

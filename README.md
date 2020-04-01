@@ -30,9 +30,11 @@ them into the controller. These are:
 |------|-------------|---------|
 | `OASIS_API_HOST` | The hostname and port of the oasisi api endpoint | `localhost:8000` |
 | `OASIS_BROKER_URL` | The url for the celery broker | `amqp://rabbit:rabbit@localhost:5672` | 
-| `OASIS_API_USER` | The username of the user to use for authentication against the api | `root` |
-| `OASIS_API_PASSWORD` | The password of the user to use for authentication against the api | `root` |
+| `OASIS_ADMIN_USER` | The username of the user to use for authentication against the api | `admin` |
+| `OASIS_ADMIN_PASS` | The password of the user to use for authentication against the api | `password` |
 | `DOCKER_SOCKET_LOCATION` | The location of the docker socket to mount in the container | `/var/run/docker.sock` |
+| `OASIS_MODEL_DATA_DIR` | The absolute path to the PiWind data on the host machine | |
+| `OASIS_MEDIA_ROOT` | The absolute path to the shared filesystem on the host machine | |
 
 The docker container created by `docker-compose` and the created containers will
 be on the `host` network so any reference to `localhost` will refer to the host

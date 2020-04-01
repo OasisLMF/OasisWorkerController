@@ -14,9 +14,9 @@
       "OASIS_CELERY_DB_NAME": "celery",
       "OASIS_CELERY_DB_PORT": "33306"
     },
-    "volumes": [
-      "/home/dan/workspace/wildfish/oasis/OasisPiWind:/var/oasis/:rw",
-      "/home/dan/workspace/wildfish/oasis/OasisPlatform/docker-shared-fs:/shared-fs:rw"
-    ]
+    "volumes": {
+      "${MODEL_DATA_DIR}": "/var/oasis/:rw",
+      "${MEDIA_ROOT}": "/shared-fs/:rw"
+    }
   }
 }
