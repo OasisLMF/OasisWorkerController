@@ -7,8 +7,8 @@ services:
     environment:
       API_HOST: "${OASIS_API_HOST:-localhost:8000}"
       BROKER_URI: "${OASIS_BROKER_URL:-amqp://rabbit:rabbit@localhost:5672}"
-      USERNAME: "${OASIS_API_USER:-root}"
-      PASSWORD: "${OASIS_API_PASSWORD:-root}"
+      USERNAME: "${OASIS_API_USER:-admin}"
+      PASSWORD: "${OASIS_API_PASSWORD:-password}"
       MEDIA_ROOT: "${OASIS_MEDIA_ROOT}"
       MODEL_DATA_DIR: "${OASIS_MODEL_DATA_DIR}"
     volumes:
