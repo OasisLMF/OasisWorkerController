@@ -221,13 +221,22 @@ async def handle_messages(args, config: ControllerConfig):
     :param args: the command line arguments
     :param config: The config loaded at application start
     """
-    try:
-        async with Connection(args.api_host, args.username, args.password, secure=args.secure) as socket:
-            async for msg in next_msg(socket):
-                await handle_msg(msg, args.network, args.broker, config)
-    except ClientError:
-        print(f'Connection to {args.api_host} failed, retrying in 60 seconds...')
-        await asyncio.sleep(60)
+    running = True
+    default_retry_time = 5
+    retry_timeout = default_retry_time
+    while running:
+        try:
+            async with Connection(args.api_host, args.username, args.password, secure=args.secure) as socket:
+                # when connected reset the timeout
+                retry_timeout = default_retry_time
+
+                async for msg in next_msg(socket):
+                    await handle_msg(msg, args.network, args.broker, config)
+        except ClientError:
+            print(f'Connection to {args.api_host} failed, retrying in {retry_timeout} seconds...')
+            await asyncio.sleep(retry_timeout)
+
+            retry_timeout = min(60, retry_timeout * 2)
 
 
 def load_config(config_path: str) -> Dict[str, ContainerConfig]:
