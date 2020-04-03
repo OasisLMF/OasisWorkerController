@@ -1,6 +1,6 @@
 {
   "OasisLMF-PiWind-1": {
-    "image": "coreoasis/model_worker:latest",
+    "image": "coreoasis/model_worker:${OASIS_MODEL_WORKER_VERSION:-latest}",
     "env": {
       "OASIS_MODEL_SUPPLIER_ID": "OasisLMF",
       "OASIS_MODEL_ID": "PiWind",

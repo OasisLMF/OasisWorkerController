@@ -251,6 +251,7 @@ def load_config(config_path: str) -> Dict[str, ContainerConfig]:
         config: Dict[str, ContainerConfig] = json.load(f)
 
         for queue_config in config.values():
+            queue_config['image'] = os.path.expandvars(queue_config['image'])
             queue_config['env'] = {k: os.path.expandvars(v) for k, v in queue_config.get('env', {}).items()}
             queue_config['volumes'] = {os.path.expandvars(k): os.path.expandvars(v) for k, v in queue_config.get('volumes', {}).items()}
 
