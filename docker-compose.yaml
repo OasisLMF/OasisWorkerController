@@ -11,5 +11,6 @@ services:
       PASSWORD: "${OASIS_API_PASSWORD:-password}"
       MEDIA_ROOT: "${OASIS_MEDIA_ROOT}"
       MODEL_DATA_DIR: "${OASIS_MODEL_DATA_DIR}"
+      MODEL_WORKER_VERSION: "${OASIS_MODEL_WORKER_VERSION:-latest}"
     volumes:
     - "${DOCKER_SOCKET_LOCATION:-/var/run/docker.sock}:/var/run/docker.sock"
