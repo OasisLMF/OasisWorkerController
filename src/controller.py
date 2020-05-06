@@ -172,6 +172,7 @@ async def stop_docker_container(queue: SocketQueueEntry):
     """
     container_id = state[queue['name']].pop()
     print(f'Stopping container: {container_id}')
+
     await asyncio.create_subprocess_shell(
         f'docker stop {container_id}',
         stdout=asyncio.subprocess.DEVNULL,
@@ -189,6 +190,7 @@ async def handle_msg(msg: SocketMessage, network: str, broker_url: str, config: 
     """
     content: List[SocketContentEntry] = msg['content']
 
+
     for entry in content:
         queue = entry['queue']
 
@@ -197,18 +199,31 @@ async def handle_msg(msg: SocketMessage, network: str, broker_url: str, config: 
             print(f'Skipping queue {queue["name"]} as it\'s not in the config')
             continue
 
+        # Check all the subtask status within a message, only allow `docker stop` when all show as 'COMPLETED'
+        analyses_list = entry['analyses']
+        all_subtask_status = []
+        for analysis in analyses_list:
+            subtasks = analysis['analysis']['sub_task_statuses']
+            subtask_status = [a['status'] for a in subtasks if a['queue_name'] == queue['name']]
+            all_subtask_status += subtask_status
+            
+        analysis_in_progress = not all(subtask == 'COMPLETED' for subtask in all_subtask_status)
+        #print(f'analyses_status: {analyses_status}')
+        #print(f'subtask_status: {subtask_status}')
+        #print(f'analysis_in_progress: {analysis_in_progress}')
+
         current_container_count = len(state.get(queue['name'], []))
         print(f'Processing containers for queue "{queue["name"]}", {queue["pending_count"]} tasks pending, {queue["queued_count"]} tasks queued, current num processing containers {current_container_count}')
 
         # if there are more tasks in the queue than we have workers make a new worker
-        if current_container_count < queue['queued_count']:
-            for i in range(queue['queued_count'] - current_container_count):
-                await start_docker_container(queue, network, broker_url, config)
+        if (current_container_count * 2) < queue['queued_count']:
+            await start_docker_container(queue, network, broker_url, config)
 
         # if there are more tasks than currently pending and queued kill some (we use
         # pending + queued here so that we dont kill single workers when tasks run serially)
-        if current_container_count > queue['pending_count'] + queue['queued_count']:
-            for i in range(current_container_count - (queue['pending_count'] + queue['queued_count'])):
+        if not analysis_in_progress:
+            min_worker_count = 0
+            for i in range(current_container_count):
                 await stop_docker_container(queue)
 
 
