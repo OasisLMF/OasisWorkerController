@@ -216,7 +216,7 @@ async def handle_msg(msg: SocketMessage, network: str, broker_url: str, config: 
         print(f'Processing containers for queue "{queue["name"]}", {queue["pending_count"]} tasks pending, {queue["queued_count"]} tasks queued, current num processing containers {current_container_count}')
 
         # if there are more tasks in the queue than we have workers make a new worker
-        if (current_container_count * 2) < queue['queued_count']:
+        if current_container_count < queue['queued_count']:
             await start_docker_container(queue, network, broker_url, config)
 
         # if there are more tasks than currently pending and queued kill some (we use
