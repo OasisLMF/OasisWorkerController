@@ -23,6 +23,7 @@ from os import getenv
 import websockets
 from aiohttp import ClientError
 import os
+import subprocess
 
 
 class SocketQueueEntry(TypedDict):
@@ -150,7 +151,7 @@ async def start_docker_container(queue: SocketQueueEntry, network: str, broker_u
     """
     image_spec = config[queue['name']]
 
-    container_name = f'{image_spec["image"].replace(":", "_").replace("/", "_")}_{uuid4().hex}'
+    container_name = f'worker_{queue["name"].replace("-", "_").lower()}_{uuid4().hex}'
 
     env_str = ' '.join(f'-e {k}="{v}"' for k, v in {**image_spec.get('env', {}), 'OASIS_WORKER_BROKER_URL': broker_url}.items())
     vol_str = ' '.join(f'-v "{k}:{v}"' for k, v in image_spec.get('volumes', {}).items())
@@ -254,6 +255,25 @@ async def handle_messages(args, config: ControllerConfig):
             retry_timeout = min(60, retry_timeout * 2)
 
 
+def start_inital_workers(args, config: ControllerConfig):
+    network = args.network
+    broker_url = args.broker
+
+    for queue_name in config:
+        image_spec = config[queue_name]
+
+        container_name = f'worker_{queue_name.replace("-", "_").lower()}_{uuid4().hex}'
+        env_str = ' '.join(f'-e {k}="{v}"' for k, v in {**image_spec.get('env', {}), 'OASIS_WORKER_BROKER_URL': broker_url}.items())
+        vol_str = ' '.join(f'-v "{k}:{v}"' for k, v in image_spec.get('volumes', {}).items())
+
+        print(f'Starting Inital container: {image_spec["image"]}')
+        subprocess.call(
+            f'docker run -d {env_str} {vol_str} --name {container_name} --network {network} {image_spec["image"]} -c 1',
+            shell=True
+        )
+        state.setdefault(queue_name, []).append(container_name)
+    
+
 def load_config(config_path: str) -> Dict[str, ContainerConfig]:
     """
     Loads the config interpolaring and environment varabled in the env
@@ -277,6 +297,8 @@ def load_config(config_path: str) -> Dict[str, ContainerConfig]:
 def main():
     args = parse_args()
     config = load_config(args.config)
+
+    start_inital_workers(args, config)
     asyncio.get_event_loop().run_until_complete(handle_messages(args, config))
 
 
