@@ -23,7 +23,6 @@ from os import getenv
 import websockets
 from aiohttp import ClientError
 import os
-import subprocess
 
 
 class SocketQueueEntry(TypedDict):
@@ -164,6 +163,21 @@ async def start_docker_container(queue: SocketQueueEntry, network: str, broker_u
 
     state.setdefault(queue['name'], []).append(container_name)
 
+async def register_workers(network: str, broker_url: str, config: ControllerConfig):
+    for queue_name in config:
+        image_spec = config[queue_name]
+
+        container_name = f'worker_{queue_name.replace("-", "_").lower()}_{uuid4().hex}'
+        env_str = ' '.join(f'-e {k}="{v}"' for k, v in {**image_spec.get('env', {}), 'OASIS_WORKER_BROKER_URL': broker_url}.items())
+        vol_str = ' '.join(f'-v "{k}:{v}"' for k, v in image_spec.get('volumes', {}).items())
+
+        print(f'Starting Inital container: {image_spec["image"]}')
+        await asyncio.create_subprocess_shell(
+            f'docker run -d {env_str} {vol_str} --name {container_name} --network {network} {image_spec["image"]} -c 1',
+            stdout=asyncio.subprocess.DEVNULL,
+        )
+        state.setdefault(queue_name, []).append(container_name)
+
 
 async def stop_docker_container(queue: SocketQueueEntry):
     """
@@ -207,7 +221,7 @@ async def handle_msg(msg: SocketMessage, network: str, broker_url: str, config: 
             subtasks = analysis['analysis']['sub_task_statuses']
             subtask_status = [a['status'] for a in subtasks if a['queue_name'] == queue['name']]
             all_subtask_status += subtask_status
-            
+
         analysis_in_progress = not all(subtask == 'COMPLETED' for subtask in all_subtask_status)
         #print(f'analyses_status: {analyses_status}')
         #print(f'subtask_status: {subtask_status}')
@@ -227,7 +241,6 @@ async def handle_msg(msg: SocketMessage, network: str, broker_url: str, config: 
             for i in range(current_container_count):
                 await stop_docker_container(queue)
 
-
 async def handle_messages(args, config: ControllerConfig):
     """
     Connects to the websocket and handles all the messages from the websocket.
@@ -240,39 +253,26 @@ async def handle_messages(args, config: ControllerConfig):
     running = True
     default_retry_time = 5
     retry_timeout = default_retry_time
+
+    # On first start load one of each worker to self-register 
+    first_start = True
     while running:
         try:
             async with Connection(args.api_host, args.username, args.password, secure=args.secure) as socket:
                 # when connected reset the timeout
                 retry_timeout = default_retry_time
 
+                if first_start:
+                    await register_workers(args.network, args.broker, config)
+                    first_start = False
+
                 async for msg in next_msg(socket):
                     await handle_msg(msg, args.network, args.broker, config)
         except ClientError:
             print(f'Connection to {args.api_host} failed, retrying in {retry_timeout} seconds...')
             await asyncio.sleep(retry_timeout)
-
             retry_timeout = min(60, retry_timeout * 2)
 
-
-def start_inital_workers(args, config: ControllerConfig):
-    network = args.network
-    broker_url = args.broker
-
-    for queue_name in config:
-        image_spec = config[queue_name]
-
-        container_name = f'worker_{queue_name.replace("-", "_").lower()}_{uuid4().hex}'
-        env_str = ' '.join(f'-e {k}="{v}"' for k, v in {**image_spec.get('env', {}), 'OASIS_WORKER_BROKER_URL': broker_url}.items())
-        vol_str = ' '.join(f'-v "{k}:{v}"' for k, v in image_spec.get('volumes', {}).items())
-
-        print(f'Starting Inital container: {image_spec["image"]}')
-        subprocess.call(
-            f'docker run -d {env_str} {vol_str} --name {container_name} --network {network} {image_spec["image"]} -c 1',
-            shell=True
-        )
-        state.setdefault(queue_name, []).append(container_name)
-    
 
 def load_config(config_path: str) -> Dict[str, ContainerConfig]:
     """
@@ -284,7 +284,6 @@ def load_config(config_path: str) -> Dict[str, ContainerConfig]:
     """
     with open(config_path) as f:
         config: Dict[str, ContainerConfig] = json.load(f)
-
         for queue_config in config.values():
             worker_version = os.environ.get('MODEL_WORKER_VERSION') if os.environ.get('MODEL_WORKER_VERSION') else 'latest'
             queue_config['image'] = queue_config['image'].format(worker_version)
@@ -297,8 +296,6 @@ def load_config(config_path: str) -> Dict[str, ContainerConfig]:
 def main():
     args = parse_args()
     config = load_config(args.config)
-
-    start_inital_workers(args, config)
     asyncio.get_event_loop().run_until_complete(handle_messages(args, config))
 
 
