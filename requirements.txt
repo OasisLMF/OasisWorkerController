@@ -13,7 +13,7 @@ certifi==2019.11.28       # via requests
 cffi==1.14.0              # via bcrypt, cryptography, pynacl
 chardet==3.0.4            # via aiohttp, requests
 click==7.1.1              # via pip-tools
-cryptography==2.8         # via paramiko
+cryptography==3.2         # via paramiko
 docker-compose==1.25.4    # via -r requirements.in
 docker[ssh]==4.2.0        # via docker-compose
 dockerpty==0.4.1          # via docker-compose
