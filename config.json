@@ -6,8 +6,8 @@
       "OASIS_MODEL_ID": "PiWind",
       "OASIS_MODEL_VERSION_ID": "1",
       "OASIS_MODEL_NUM_ANALYSIS_CHUNKS": "8",
-      "OASIS_CELERY_BROKER_URL": "amqp://rabbit:rabbit@localhost:5672",
-      "OASIS_CELERY_DB_ENGINE": "db+mysql+pymysql",
+      "OASIS_CELERY_BROKER_URL": "redis://localhost:6379",
+      "OASIS_CELERY_DB_ENGINE": "db+postgresql+psycopg2",
       "OASIS_CELERY_DB_HOST": "localhost",
       "OASIS_CELERY_DB_PASS": "password",
       "OASIS_CELERY_DB_USER": "celery",
@@ -16,7 +16,7 @@
       "OASIS_KEEP_RUN_DIR": "true"
     },
     "volumes": {
-      "${MODEL_DATA_DIR}": "/var/oasis/:rw",
+      "${MODEL_DATA_DIR}": "/home/worker/model:rw",
       "${MEDIA_ROOT}": "/shared-fs/:rw"
     }
   }
