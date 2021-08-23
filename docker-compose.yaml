@@ -14,3 +14,4 @@ services:
       MODEL_WORKER_VERSION: "${OASIS_MODEL_WORKER_VERSION:-latest}"
     volumes:
     - "${DOCKER_SOCKET_LOCATION:-/var/run/docker.sock}:/var/run/docker.sock"
+    - ./config.json:/home/controller/config.json  
