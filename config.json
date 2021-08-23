@@ -6,7 +6,7 @@
       "OASIS_MODEL_ID": "PiWind",
       "OASIS_MODEL_VERSION_ID": "1",
       "OASIS_MODEL_NUM_ANALYSIS_CHUNKS": "8",
-      "OASIS_CELERY_BROKER_URL": "redis://localhost:6379",
+      "OASIS_CELERY_BROKER_URL": "redis://localhost:5432",
       "OASIS_CELERY_DB_ENGINE": "db+postgresql+psycopg2",
       "OASIS_CELERY_DB_HOST": "localhost",
       "OASIS_CELERY_DB_PASS": "password",
