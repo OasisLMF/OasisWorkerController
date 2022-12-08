@@ -1,3 +1,5 @@
+> WARNING: This repository has been replaced with a kubernetes version stored in [OasisPlatform/kubernetes/worker-controller](https://github.com/OasisLMF/OasisPlatform/tree/platform-2.0/kubernetes/worker-controller)
+
 # Oasis worker controller
 
 This is an example of how you can control workers in your oasis deployment.
